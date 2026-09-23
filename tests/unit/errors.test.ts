@@ -33,4 +33,18 @@ describe("describeError", () => {
   it("stringifies a non-Error value", () => {
     expect(describeError("plain string")).toBe("plain string");
   });
+
+  it("stringifies a thrown plain object as [object Object]", () => {
+    // Third-party dependencies sometimes reject with bare objects. The
+    // fallback branch reduces such values to JavaScript's default object
+    // stringification, which is unhelpful but must not throw or crash.
+    expect(describeError({ code: 500, details: "boom" })).toBe("[object Object]");
+  });
+
+  it("stringifies a thrown number as its decimal literal", () => {
+    // Locks down that numeric thrown values (e.g. C-style error codes)
+    // survive the fallback branch unchanged rather than being wrapped in
+    // additional text.
+    expect(describeError(42)).toBe("42");
+  });
 });
