@@ -45,10 +45,15 @@ export function getInputs(): ActionInputs {
   };
 }
 
+/** Normalizes a raw Action input: returns undefined for an empty or
+ * whitespace-only value, otherwise the trimmed value. Never throws. */
 function optional(value: string): string | undefined {
   return value.trim() === "" ? undefined : value.trim();
 }
 
+/** Validates the "protocol" input as a non-negative integer string (digits
+ * only, e.g. "28"); undefined when unset. Throws {@link InvalidInputError}
+ * for anything else. */
 function parseProtocol(raw: string): number | undefined {
   const value = optional(raw);
   if (value === undefined) {
@@ -62,6 +67,9 @@ function parseProtocol(raw: string): number | undefined {
   return Number.parseInt(value, 10);
 }
 
+/** Validates the "config" input as a path to an existing file, resolved
+ * against the current working directory; undefined when unset. Throws
+ * {@link ConfigNotFoundError} when the path does not exist. */
 function parseConfig(raw: string): string | undefined {
   const value = optional(raw);
   if (value === undefined) {
@@ -74,6 +82,11 @@ function parseConfig(raw: string): string | undefined {
   return value;
 }
 
+/** Validates the "rpc-url" input as a parseable URL and enforces the scheme
+ * allow-list: https:// only, with one deliberate exception — plain http://
+ * is accepted for localhost/127.0.0.1 so local development endpoints work.
+ * Throws {@link InvalidInputError} for an unparseable URL or any other
+ * non-https scheme. */
 function parseRpcUrl(raw: string): string | undefined {
   const value = optional(raw);
   if (value === undefined) {
@@ -99,6 +112,8 @@ function parseRpcUrl(raw: string): string | undefined {
   return value;
 }
 
+/** Validates the "version" input as a semver-like x.y.z after stripping an
+ * optional leading "v". Throws {@link InvalidInputError} for anything else. */
 function parseVersion(raw: string): string {
   const value = raw.trim().replace(/^v/i, "");
   if (!SEMVER_LIKE.test(value)) {
@@ -112,6 +127,10 @@ function parseVersion(raw: string): string {
 const TRUE_VALUES = new Set(["true", "True", "TRUE"]);
 const FALSE_VALUES = new Set(["false", "False", "FALSE"]);
 
+/** Validates a boolean input against the documented literals
+ * (true/True/TRUE, false/False/FALSE) after trimming whitespace. Throws
+ * {@link InvalidInputError}, naming the offending input, for any other
+ * form. */
 function parseBoolean(name: string, raw: string): boolean {
   const value = raw.trim();
   if (TRUE_VALUES.has(value)) {
@@ -125,6 +144,8 @@ function parseBoolean(name: string, raw: string): boolean {
   );
 }
 
+/** Validates the "timeout-minutes" input as a positive integer. Throws
+ * {@link InvalidInputError} for zero, negative, or non-numeric input. */
 function parseTimeout(raw: string): number {
   const value = Number.parseInt(raw.trim(), 10);
   if (!Number.isFinite(value) || value <= 0) {
