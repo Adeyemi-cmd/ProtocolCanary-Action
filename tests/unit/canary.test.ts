@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ensureCanaryInstalled } from "../../src/canary";
+import { InstallationFailedError } from "../../src/errors";
 import { ResolvedVersion } from "../../src/version";
 
 const MOCK_CANARY_SOURCE = path.join(__dirname, "..", "fixtures", "mock-canary.cjs");
@@ -55,4 +56,44 @@ describe("ensureCanaryInstalled", () => {
     const resolved: ResolvedVersion = { version: "0.1.0", tag: "v0.1.0", commitSha: "abc123" };
     await expect(ensureCanaryInstalled(resolved)).rejects.toThrow();
   }, 30_000);
+
+  it("rejects with InstallationFailedError when cargo is unavailable", async () => {
+    // Simulate a runner with no Rust toolchain: CARGO_HOME already points
+    // at the empty temp dir from beforeEach, and PATH is scrubbed of every
+    // directory that could resolve a `cargo` binary. `@actions/exec` looks
+    // up the command with `io.which(..., true)`, so the very first
+    // `cargo --version` probe rejects before any network call is attempted.
+    const originalPath = process.env.PATH;
+    const originalPathExt = process.env.PATHEXT;
+    process.env.PATH = tempCargoHome;
+    delete process.env.PATHEXT;
+
+    try {
+      const resolved: ResolvedVersion = { version: "0.1.0", tag: "v0.1.0", commitSha: "abc123" };
+      try {
+        await ensureCanaryInstalled(resolved);
+        expect.unreachable("ensureCanaryInstalled should have rejected when cargo is unavailable");
+      } catch (error) {
+        expect(error).toBeInstanceOf(InstallationFailedError);
+        expect((error as InstallationFailedError).code).toBe("InstallationFailed");
+
+        // The whole point of this error message is to tell a self-hosted
+        // or non-Ubuntu runner operator exactly what to install.
+        const message = (error as InstallationFailedError).message;
+        expect(message).toContain("The `cargo` command was not found on this runner");
+        expect(message).toContain("dtolnay/rust-toolchain");
+      }
+    } finally {
+      if (originalPath === undefined) {
+        delete process.env.PATH;
+      } else {
+        process.env.PATH = originalPath;
+      }
+      if (originalPathExt === undefined) {
+        delete process.env.PATHEXT;
+      } else {
+        process.env.PATHEXT = originalPathExt;
+      }
+    }
+  });
 });
