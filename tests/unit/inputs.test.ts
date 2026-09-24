@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ConfigNotFoundError, InvalidInputError } from "../../src/errors";
 import { getInputs } from "../../src/inputs";
@@ -48,6 +49,11 @@ describe("getInputs", () => {
     expect(getInputs().protocol).toBe(28);
   });
 
+  it("accepts protocol '0' as a valid non-negative integer", () => {
+    process.env.INPUT_PROTOCOL = "0";
+    expect(getInputs().protocol).toBe(0);
+  });
+
   it("rejects a non-numeric protocol", () => {
     process.env.INPUT_PROTOCOL = "not-a-number";
     expect(() => getInputs()).toThrow(InvalidInputError);
@@ -74,6 +80,21 @@ describe("getInputs", () => {
       // the existence check validated, not the string as written.
       expect(inputs.config).toBe(configPath);
       expect(inputs.config).not.toBe(relative);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts a config path that exists but is a directory", () => {
+    // parseConfig validates with fs.existsSync, which is true for a directory
+    // just as much as for a file, so it does not reject this here. This test
+    // pins the current (permissive) behavior: a directory is accepted and
+    // only fails later inside the stellar-canary CLI, with a less specific
+    // error than ConfigNotFoundError would give up front.
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "canary-config-dir-"));
+    try {
+      process.env.INPUT_CONFIG = dir;
+      expect(getInputs().config).toBe(dir);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
