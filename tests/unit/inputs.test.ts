@@ -45,6 +45,11 @@ describe("getInputs", () => {
     expect(getInputs().protocol).toBe(28);
   });
 
+  it("accepts protocol '0' as a valid non-negative integer", () => {
+    process.env.INPUT_PROTOCOL = "0";
+    expect(getInputs().protocol).toBe(0);
+  });
+
   it("rejects a non-numeric protocol", () => {
     process.env.INPUT_PROTOCOL = "not-a-number";
     expect(() => getInputs()).toThrow(InvalidInputError);
