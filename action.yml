@@ -98,7 +98,11 @@ outputs:
   errors:
     description: Number of checks that could not complete due to an execution error.
   report:
-    description: Absolute path to the generated JSON report file.
+    description: >-
+      Absolute path to the generated JSON report file. Only set when Canary
+      produced output to parse; empty/unset on an execution failure (when
+      status is `execution-failed`), unlike `passed`/`warnings`/`failures`/`errors`,
+      which are explicitly set to `0` in that case.
 
 runs:
   using: node24
