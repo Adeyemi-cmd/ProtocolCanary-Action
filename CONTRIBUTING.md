@@ -123,10 +123,14 @@ exit-code contract:
 ## Release process
 
 1. Update `CHANGELOG.md`.
-2. Tag `vX.Y.Z` on `main` (annotated tag, matching `package.json`'s
+2. Update the supported-versions table in `SECURITY.md`: add the new
+   version as supported and mark every previously released version
+   unsupported, so the table stays in sync with `CHANGELOG.md`'s
+   release history.
+3. Tag `vX.Y.Z` on `main` (annotated tag, matching `package.json`'s
    version). `.github/workflows/release.yml` verifies the build and tests
    for that tag and publishes a GitHub Release.
-3. Move the floating major tag (e.g. `v1`) to point at the new tag's
+4. Move the floating major tag (e.g. `v1`) to point at the new tag's
    commit, once you've confirmed the release looks right:
    ```bash
    git tag -fa v1 vX.Y.Z -m "Update v1 to vX.Y.Z"
