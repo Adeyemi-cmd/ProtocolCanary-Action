@@ -79,7 +79,7 @@ jobs:
 | `version` | `Protocol-Canary` version to install, without a leading `v`. Pinned — never tracks `main`. | `0.1.1` |
 | `upload-report` | Upload the JSON report as a workflow artifact. | `true` |
 | `annotations` | Emit GitHub annotations for failures/warnings/errors. | `true` |
-| `timeout-minutes` | Maximum time to let Canary run before it is terminated. | `15` |
+| `timeout-minutes` | Maximum time to let Canary run before it is terminated. Bounds only the Canary process, not the whole job — see [Timeouts](#timeouts). | `15` |
 
 There is deliberately no `format` input: the Action always requests
 `--format json` from the CLI (the only way it can build the summary and
@@ -113,6 +113,47 @@ The Action distinguishes two different kinds of "red":
 A separate failure — the job summary itself failing to publish — is
 reported as "Failed to publish Canary summary," distinct from both of the
 above.
+
+## Timeouts
+
+The `timeout-minutes` input (default `15`) bounds only the `stellar-canary
+check` process: if it is still running after that many minutes, the Action
+terminates it and fails with an explicit timeout error ("Stellar Protocol
+Canary timed out after Ns and was terminated"), along with the usual job
+summary and annotation. It does **not** cover the rest of the job —
+installing `Protocol-Canary` with `cargo install`, which runs *before* the
+timed process starts and can itself take several minutes on a cold cache,
+and publishing the summary/uploading the report artifact, which run after.
+
+This input is not GitHub Actions' own `timeout-minutes`, which you can set
+on a step or a job and which the platform enforces independently:
+
+```yaml
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30        # GitHub's limit: the whole job
+    steps:
+      - uses: actions/checkout@v4
+      - uses: StellarCanary/ProtocolCanary-Action@v1
+        with:
+          timeout-minutes: "20" # this Action's limit: the Canary process only
+```
+
+Because GitHub's limit covers the entire job while this input covers a
+single process, a job- or step-level `timeout-minutes` that is not
+comfortably larger can fire first. When it does, GitHub Actions terminates
+the step itself and reports its own generic "has exceeded the maximum
+execution time" error: the summary, annotations, and specific timeout
+diagnostic that this Action would have published never appear, so a job
+killed this way is harder to tell apart from a genuine compatibility
+failure.
+
+Set any surrounding job- or step-level `timeout-minutes` comfortably higher
+than this input's value — with headroom for the `cargo install` step that
+runs before the timed process and for the summary/artifact work that runs
+after it — so this Action's own, more informative timeout is the one that
+fires.
 
 ## Artifacts
 
