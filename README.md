@@ -42,7 +42,8 @@ Canonical fixtures live in
 
 See [`examples/`](examples/) for complete workflows, including one that
 checks out the real `ProtocolCanary-Fixtures` Protocol 28 pack
-([`examples/protocol-28.yml`](examples/protocol-28.yml)).
+([`examples/protocol-28.yml`](examples/protocol-28.yml)) and one that runs
+on a self-hosted runner ([`examples/self-hosted.yml`](examples/self-hosted.yml)).
 
 ## Example workflow
 
@@ -94,7 +95,7 @@ annotations), and never invokes Canary twice to get a second format.
 | `warnings` | Number of checks that produced a warning. |
 | `failures` | Number of checks that failed a compatibility assertion. |
 | `errors` | Number of checks that could not complete due to an execution error. |
-| `report` | Absolute path to the generated JSON report file. |
+| `report` | Absolute path to the generated JSON report file. Only set when Canary produced output to parse; empty/unset on an execution failure (`status` `execution-failed`). |
 
 ## How failures appear
 
@@ -114,46 +115,11 @@ A separate failure — the job summary itself failing to publish — is
 reported as "Failed to publish Canary summary," distinct from both of the
 above.
 
-## Timeouts
-
-The `timeout-minutes` input (default `15`) bounds only the `stellar-canary
-check` process: if it is still running after that many minutes, the Action
-terminates it and fails with an explicit timeout error ("Stellar Protocol
-Canary timed out after Ns and was terminated"), along with the usual job
-summary and annotation. It does **not** cover the rest of the job —
-installing `Protocol-Canary` with `cargo install`, which runs *before* the
-timed process starts and can itself take several minutes on a cold cache,
-and publishing the summary/uploading the report artifact, which run after.
-
-This input is not GitHub Actions' own `timeout-minutes`, which you can set
-on a step or a job and which the platform enforces independently:
-
-```yaml
-jobs:
-  compatibility:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30        # GitHub's limit: the whole job
-    steps:
-      - uses: actions/checkout@v4
-      - uses: StellarCanary/ProtocolCanary-Action@v1
-        with:
-          timeout-minutes: "20" # this Action's limit: the Canary process only
-```
-
-Because GitHub's limit covers the entire job while this input covers a
-single process, a job- or step-level `timeout-minutes` that is not
-comfortably larger can fire first. When it does, GitHub Actions terminates
-the step itself and reports its own generic "has exceeded the maximum
-execution time" error: the summary, annotations, and specific timeout
-diagnostic that this Action would have published never appear, so a job
-killed this way is harder to tell apart from a genuine compatibility
-failure.
-
-Set any surrounding job- or step-level `timeout-minutes` comfortably higher
-than this input's value — with headroom for the `cargo install` step that
-runs before the timed process and for the summary/artifact work that runs
-after it — so this Action's own, more informative timeout is the one that
-fires.
+Annotations from this Action are workflow-level only: no fixture in the
+report schema carries a file/line location, so they appear in the
+workflow run's Checks output and logs, never inline on a pull request's
+file diff the way file-scoped annotations from other tools do. The Action
+never fabricates a location.
 
 ## Artifacts
 
@@ -162,6 +128,23 @@ workflow artifact named `stellar-protocol-canary-report`. Artifact upload
 is always auxiliary: if it fails, the underlying compatibility result is
 unaffected, and a warning is logged rather than the job failing on that
 account alone.
+
+GitHub requires artifact names to be unique within a workflow run, so a
+second invocation — a matrix leg, or a second Action step checking another
+network or protocol — would otherwise collide with the first. The Action
+handles this automatically: **the first invocation keeps the stable name
+`stellar-protocol-canary-report`**, and a later invocation whose upload is
+rejected because that name is taken retries under a suffixed name derived
+from the inputs that distinguish it, for example
+`stellar-protocol-canary-report-protocol-28-network-testnet`. (When no
+inputs distinguish the invocation, a short unique suffix is used instead.)
+
+This means existing single-step workflows keep the exact artifact name
+they have always had, while multi-invocation workflows collect one report
+per invocation instead of silently dropping every upload after the first.
+Downloading a specific report from a multi-invocation run therefore means
+matching the suffix — either the protocol/network/config it checked, or the
+generated unique suffix when the invocations share the same inputs.
 
 ## Installation & integrity
 
@@ -172,15 +155,22 @@ checksums (see its own `docs/json-report-contract.md` and this Action's
 resolved to at run time (falling back to the tag itself, with a warning, if
 that resolution fails) — see `src/version.ts` and `src/canary.ts`. This
 requires a Rust/Cargo toolchain on the runner; GitHub-hosted Ubuntu
-runners include one by default. A successful build is cached (best-effort;
-never required for correctness) using `actions/cache`.
+runners include one by default. A self-hosted or non-Ubuntu runner must
+install one before this Action runs — see
+[`examples/self-hosted.yml`](examples/self-hosted.yml) for a complete
+workflow that does this with `dtolnay/rust-toolchain` ahead of invoking
+this Action. A successful build is cached (best-effort; never required for
+correctness) using `actions/cache`.
 
 ## Versioning
 
 This repository follows semver and publishes a floating `v1` tag pointing
 at the latest `v1.x.y` release, per standard GitHub Actions convention. The
-`version` input is unrelated to this Action's own version: it selects which
-`Protocol-Canary` release to install and run.
+release workflow moves that tag automatically when a new `vX.Y.Z` tag is
+pushed (and only ever forwards, never backwards), so `@v1` always resolves
+to the newest `v1.x.y` release. The `version` input is unrelated to this
+Action's own version: it selects which `Protocol-Canary` release to install
+and run.
 
 ### Supported Canary versions
 
