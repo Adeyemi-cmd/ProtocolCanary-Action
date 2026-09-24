@@ -122,6 +122,23 @@ is always auxiliary: if it fails, the underlying compatibility result is
 unaffected, and a warning is logged rather than the job failing on that
 account alone.
 
+GitHub requires artifact names to be unique within a workflow run, so a
+second invocation — a matrix leg, or a second Action step checking another
+network or protocol — would otherwise collide with the first. The Action
+handles this automatically: **the first invocation keeps the stable name
+`stellar-protocol-canary-report`**, and a later invocation whose upload is
+rejected because that name is taken retries under a suffixed name derived
+from the inputs that distinguish it, for example
+`stellar-protocol-canary-report-protocol-28-network-testnet`. (When no
+inputs distinguish the invocation, a short unique suffix is used instead.)
+
+This means existing single-step workflows keep the exact artifact name
+they have always had, while multi-invocation workflows collect one report
+per invocation instead of silently dropping every upload after the first.
+Downloading a specific report from a multi-invocation run therefore means
+matching the suffix — either the protocol/network/config it checked, or the
+generated unique suffix when the invocations share the same inputs.
+
 ## Installation & integrity
 
 `Protocol-Canary` does not yet publish prebuilt release binaries or
@@ -138,8 +155,11 @@ never required for correctness) using `actions/cache`.
 
 This repository follows semver and publishes a floating `v1` tag pointing
 at the latest `v1.x.y` release, per standard GitHub Actions convention. The
-`version` input is unrelated to this Action's own version: it selects which
-`Protocol-Canary` release to install and run.
+release workflow moves that tag automatically when a new `vX.Y.Z` tag is
+pushed (and only ever forwards, never backwards), so `@v1` always resolves
+to the newest `v1.x.y` release. The `version` input is unrelated to this
+Action's own version: it selects which `Protocol-Canary` release to install
+and run.
 
 ### Supported Canary versions
 

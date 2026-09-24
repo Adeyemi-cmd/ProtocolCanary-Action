@@ -126,11 +126,17 @@ exit-code contract:
 2. Tag `vX.Y.Z` on `main` (annotated tag, matching `package.json`'s
    version). `.github/workflows/release.yml` verifies the build and tests
    for that tag and publishes a GitHub Release.
-3. Move the floating major tag (e.g. `v1`) to point at the new tag's
-   commit, once you've confirmed the release looks right:
+3. The floating major tag (e.g. `v1`) is moved automatically by
+   `.github/workflows/release.yml`, in the same job, after the release is
+   created. No manual step is required. The workflow only ever moves the
+   major tag forward: it is left untouched when the pushed tag is not the
+   newest `vX.Y.Z` in that major line (a re-run, or a tag pushed out of
+   order), and pre-1.0 releases publish no floating major tag at all.
+
+   If you need to move a major tag by hand for an exceptional case, use an
+   annotated tag and force-push it — but never do this for a pre-1.0
+   release, and never move a major tag backwards:
    ```bash
    git tag -fa v1 vX.Y.Z -m "Update v1 to vX.Y.Z"
    git push origin v1 --force
    ```
-   Never do this for a pre-1.0 release, and never move a major tag
-   backwards.
