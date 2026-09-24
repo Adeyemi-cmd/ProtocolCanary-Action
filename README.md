@@ -172,6 +172,15 @@ to the newest `v1.x.y` release. The `version` input is unrelated to this
 Action's own version: it selects which `Protocol-Canary` release to install
 and run.
 
+```yaml
+- uses: StellarCanary/ProtocolCanary-Action@v1 # floating major tag
+- uses: StellarCanary/ProtocolCanary-Action@v1.2.3 # pinned to an exact release
+```
+
+Prefer `@v1` to receive fixes automatically within `v1`; pin to an exact
+tag like `@v1.2.3` when you need full reproducibility (consistent with the
+`version` input, which is pinned and never tracks `main`).
+
 ### Supported Canary versions
 
 | Action | Protocol-Canary |
