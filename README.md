@@ -94,7 +94,7 @@ annotations), and never invokes Canary twice to get a second format.
 | `warnings` | Number of checks that produced a warning. |
 | `failures` | Number of checks that failed a compatibility assertion. |
 | `errors` | Number of checks that could not complete due to an execution error. |
-| `report` | Absolute path to the generated JSON report file. |
+| `report` | Absolute path to the generated JSON report file. Only set when Canary produced output to parse; empty/unset on an execution failure (`status` `execution-failed`). |
 
 ## How failures appear
 
