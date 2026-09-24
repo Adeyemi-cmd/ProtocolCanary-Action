@@ -42,7 +42,8 @@ Canonical fixtures live in
 
 See [`examples/`](examples/) for complete workflows, including one that
 checks out the real `ProtocolCanary-Fixtures` Protocol 28 pack
-([`examples/protocol-28.yml`](examples/protocol-28.yml)).
+([`examples/protocol-28.yml`](examples/protocol-28.yml)) and one that runs
+on a self-hosted runner ([`examples/self-hosted.yml`](examples/self-hosted.yml)).
 
 ## Example workflow
 
@@ -114,6 +115,12 @@ A separate failure — the job summary itself failing to publish — is
 reported as "Failed to publish Canary summary," distinct from both of the
 above.
 
+Annotations from this Action are workflow-level only: no fixture in the
+report schema carries a file/line location, so they appear in the
+workflow run's Checks output and logs, never inline on a pull request's
+file diff the way file-scoped annotations from other tools do. The Action
+never fabricates a location.
+
 ## Artifacts
 
 When `upload-report: true` (the default), the JSON report is uploaded as a
@@ -148,8 +155,12 @@ checksums (see its own `docs/json-report-contract.md` and this Action's
 resolved to at run time (falling back to the tag itself, with a warning, if
 that resolution fails) — see `src/version.ts` and `src/canary.ts`. This
 requires a Rust/Cargo toolchain on the runner; GitHub-hosted Ubuntu
-runners include one by default. A successful build is cached (best-effort;
-never required for correctness) using `actions/cache`.
+runners include one by default. A self-hosted or non-Ubuntu runner must
+install one before this Action runs — see
+[`examples/self-hosted.yml`](examples/self-hosted.yml) for a complete
+workflow that does this with `dtolnay/rust-toolchain` ahead of invoking
+this Action. A successful build is cached (best-effort; never required for
+correctness) using `actions/cache`.
 
 ## Versioning
 
