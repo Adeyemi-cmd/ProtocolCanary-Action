@@ -80,7 +80,7 @@ jobs:
 | `version` | `Protocol-Canary` version to install, without a leading `v`. Pinned — never tracks `main`. | `0.1.1` |
 | `upload-report` | Upload the JSON report as a workflow artifact. | `true` |
 | `annotations` | Emit GitHub annotations for failures/warnings/errors. | `true` |
-| `timeout-minutes` | Maximum time to let Canary run before it is terminated. | `15` |
+| `timeout-minutes` | Maximum time to let Canary run before it is terminated. Bounds only the Canary process, not the whole job — see [Timeouts](#timeouts). | `15` |
 
 There is deliberately no `format` input: the Action always requests
 `--format json` from the CLI (the only way it can build the summary and
