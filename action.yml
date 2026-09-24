@@ -63,9 +63,13 @@ inputs:
   upload-report:
     description: >-
       Upload the machine-readable JSON report as a workflow artifact
-      named `stellar-protocol-canary-report`. Artifact upload is
-      auxiliary: a failure to upload never changes the underlying
-      compatibility result.
+      named `stellar-protocol-canary-report`. When the same workflow run
+      invokes this Action more than once (for example a matrix over
+      networks or protocol versions), the first invocation keeps that
+      stable name and later invocations automatically retry under a
+      name suffixed with the inputs that distinguish them. Artifact
+      upload is auxiliary: a failure to upload never changes the
+      underlying compatibility result.
     required: false
     default: "true"
 
