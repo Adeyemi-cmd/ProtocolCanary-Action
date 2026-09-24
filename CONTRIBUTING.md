@@ -58,6 +58,53 @@ variable. `.github/workflows/integration.yml` is the only place this
 repository talks to a real Canary build and a real Testnet endpoint, and it
 never gates a pull request.
 
+For tests that need to observe what the Action reports through
+`@actions/core`, use the partial-mock convention described in [Mocking
+`@actions/core`](#mocking-actionscore) below rather than mocking the module
+your own way.
+
+### Mocking `@actions/core`
+
+When a test needs to assert on `core.error`, `core.warning`, or
+`core.setFailed`, spread the real module and override only the exports that
+test observes. Never replace `@actions/core` wholesale with a hand-written
+object: unrelated exports such as `core.summary`, `core.getInput`, and
+`core.setOutput` must keep working through the real implementation, and the
+suite relies on that (for example, `core.summary` writes
+`GITHUB_STEP_SUMMARY`). This is the pattern used by
+`tests/unit/annotations.test.ts` and `tests/integration/end-to-end.test.ts`:
+
+```ts
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+// vi.mock is hoisted above the imports, so the mock functions must be too.
+const { errorMock } = vi.hoisted(() => ({ errorMock: vi.fn() }));
+
+vi.mock("@actions/core", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@actions/core")>();
+  return { ...actual, error: errorMock };
+});
+
+import { emitAnnotations } from "../../src/annotations";
+
+afterEach(() => {
+  errorMock.mockReset();
+});
+```
+
+Key points:
+
+- declare the spies with `vi.hoisted` so the hoisted `vi.mock` factory can
+  reference them;
+- take `importOriginal<typeof import("@actions/core")>()` and spread
+  `...actual`, overriding only the functions under test;
+- reset the mocks in `afterEach` (`mockReset()`) so assertions in one test
+  do not see calls from another.
+
+Only add a mock for an export the test actually asserts on; leaving the
+rest real is what keeps these tests interoperable with the rest of the
+suite.
+
 ## Build
 
 `dist/index.js` is a committed, bundled artifact — consumers of this
