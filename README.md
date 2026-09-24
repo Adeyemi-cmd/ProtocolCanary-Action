@@ -42,7 +42,8 @@ Canonical fixtures live in
 
 See [`examples/`](examples/) for complete workflows, including one that
 checks out the real `ProtocolCanary-Fixtures` Protocol 28 pack
-([`examples/protocol-28.yml`](examples/protocol-28.yml)).
+([`examples/protocol-28.yml`](examples/protocol-28.yml)) and one that runs
+on a self-hosted runner ([`examples/self-hosted.yml`](examples/self-hosted.yml)).
 
 ## Example workflow
 
@@ -154,8 +155,12 @@ checksums (see its own `docs/json-report-contract.md` and this Action's
 resolved to at run time (falling back to the tag itself, with a warning, if
 that resolution fails) — see `src/version.ts` and `src/canary.ts`. This
 requires a Rust/Cargo toolchain on the runner; GitHub-hosted Ubuntu
-runners include one by default. A successful build is cached (best-effort;
-never required for correctness) using `actions/cache`.
+runners include one by default. A self-hosted or non-Ubuntu runner must
+install one before this Action runs — see
+[`examples/self-hosted.yml`](examples/self-hosted.yml) for a complete
+workflow that does this with `dtolnay/rust-toolchain` ahead of invoking
+this Action. A successful build is cached (best-effort; never required for
+correctness) using `actions/cache`.
 
 ## Versioning
 
