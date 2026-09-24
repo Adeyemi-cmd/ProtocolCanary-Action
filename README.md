@@ -114,6 +114,12 @@ A separate failure — the job summary itself failing to publish — is
 reported as "Failed to publish Canary summary," distinct from both of the
 above.
 
+Annotations from this Action are workflow-level only: no fixture in the
+report schema carries a file/line location, so they appear in the
+workflow run's Checks output and logs, never inline on a pull request's
+file diff the way file-scoped annotations from other tools do. The Action
+never fabricates a location.
+
 ## Artifacts
 
 When `upload-report: true` (the default), the JSON report is uploaded as a
