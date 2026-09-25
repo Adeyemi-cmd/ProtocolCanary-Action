@@ -143,6 +143,8 @@ describe("Action end-to-end (via mock-canary)", () => {
     expect(outputs.status).toBe("pass");
     expect(outputs.passed).toBe("1");
     expect(outputs.failures).toBe("0");
+    expect(path.isAbsolute(outputs.report)).toBe(true);
+    expect(fs.existsSync(outputs.report)).toBe(true);
     expect(fs.readFileSync(fixture.summaryPath, "utf8")).toContain("✅ **PASS**");
   });
 
@@ -185,6 +187,8 @@ describe("Action end-to-end (via mock-canary)", () => {
     const outputs = readOutputs(fixture.outputPath);
     expect(outputs.status).toBe("fail");
     expect(outputs.failures).toBe("1");
+    expect(path.isAbsolute(outputs.report)).toBe(true);
+    expect(fs.existsSync(outputs.report)).toBe(true);
     expect(fs.readFileSync(fixture.summaryPath, "utf8")).toContain("NOT READY");
   });
 
